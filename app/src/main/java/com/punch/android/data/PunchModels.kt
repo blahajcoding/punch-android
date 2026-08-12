@@ -11,6 +11,28 @@ data class PunchState(
         chats.filter { it.bundleId == bundleId }.sortedByDescending { it.updatedAt }
 
     fun recents(): List<ChatThread> = chats.sortedByDescending { it.updatedAt }
+
+    fun withoutChat(id: String): PunchState {
+        val remaining = chats.filterNot { it.id == id }
+        val nextActive = when {
+            activeChatId != id -> activeChatId
+            remaining.isNotEmpty() -> remaining.maxBy { it.updatedAt }.id
+            else -> null
+        }
+        return copy(chats = remaining, activeChatId = nextActive)
+    }
+
+    fun withoutBundle(id: String): PunchState {
+        return copy(
+            bundles = bundles.filterNot { it.id == id },
+            chats = chats.map { chat ->
+                chat.copy(
+                    bundleId = chat.bundleId.takeUnless { it == id },
+                    crossRefBundleIds = chat.crossRefBundleIds.filterNot { it == id },
+                )
+            },
+        )
+    }
 }
 
 data class ChatThread(

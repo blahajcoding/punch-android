@@ -10,11 +10,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -22,17 +28,24 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.punch.android.data.Bundle
 import com.punch.android.data.ChatThread
+import com.punch.android.ui.theme.PunchInk
 import com.punch.android.ui.theme.PunchIvory
 import com.punch.android.ui.theme.PunchMint
 import com.punch.android.ui.theme.PunchMuted
-import com.punch.android.ui.theme.PunchInk
 import com.punch.android.ui.theme.PunchStroke
 
 @Composable
@@ -44,7 +57,117 @@ fun BundleScreen(
     onAddFile: () -> Unit,
     onNewChat: () -> Unit,
     onOpenChat: (ChatThread) -> Unit,
+    onDeleteChat: (ChatThread) -> Unit,
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    if (showSettings) {
+        BundleSettings(
+            bundle = bundle,
+            onNameChange = onNameChange,
+            onInstructionsChange = onInstructionsChange,
+            onDone = { showSettings = false },
+            modifier = modifier,
+        )
+        return
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = onBack) { Text("Back", color = PunchMint) }
+            Spacer(Modifier.weight(1f))
+            IconButton(
+                onClick = { showSettings = true },
+                modifier = Modifier
+                    .testTag("bundle_settings")
+                    .semantics { contentDescription = "Bundle settings" },
+            ) {
+                Icon(Icons.Filled.Settings, contentDescription = "Bundle settings", tint = PunchIvory)
+            }
+        }
+        Text(
+            text = bundle.name,
+            style = MaterialTheme.typography.headlineSmall,
+            color = PunchIvory,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+        )
+        OutlinedButton(
+            onClick = onAddFile,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("bundle_add_file"),
+            shape = RoundedCornerShape(50),
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = null, tint = PunchIvory)
+            Spacer(Modifier.width(8.dp))
+            Text("Add files", color = PunchIvory)
+        }
+        if (bundle.files.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            bundle.files.forEach { file ->
+                Text(
+                    text = file.name,
+                    color = PunchIvory,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 6.dp),
+                )
+            }
+        }
+        Spacer(Modifier.height(20.dp))
+        Text("Chats", color = PunchMuted, style = MaterialTheme.typography.bodySmall)
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        ) {
+            items(chats, key = { it.id }) { chat ->
+                DeleteMenuBox(
+                    onClick = { onOpenChat(chat) },
+                    onDelete = { onDeleteChat(chat) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = chat.title,
+                        color = PunchIvory,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                    )
+                }
+            }
+        }
+        Button(
+            onClick = onNewChat,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("bundle_new_chat"),
+            colors = ButtonDefaults.buttonColors(containerColor = PunchMint, contentColor = PunchInk),
+            shape = RoundedCornerShape(50),
+        ) {
+            Text("New chat in bundle")
+        }
+    }
+}
+
+@Composable
+private fun BundleSettings(
+    bundle: Bundle,
+    onNameChange: (String) -> Unit,
+    onInstructionsChange: (String) -> Unit,
+    onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val fieldColors = OutlinedTextFieldDefaults.colors(
@@ -63,22 +186,23 @@ fun BundleScreen(
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Bundle", style = MaterialTheme.typography.headlineSmall, color = PunchIvory)
-            TextButton(onClick = onBack) { Text("Back", color = PunchMint) }
+            Text("Bundle settings", style = MaterialTheme.typography.headlineSmall, color = PunchIvory)
+            TextButton(onClick = onDone) { Text("Done", color = PunchMint) }
         }
         OutlinedTextField(
             value = bundle.name,
             onValueChange = onNameChange,
-            modifier = Modifier.fillMaxWidth().testTag("bundle_name"),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("bundle_name"),
             label = { Text("Name") },
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
@@ -89,37 +213,16 @@ fun BundleScreen(
             onValueChange = onInstructionsChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(160.dp)
+                .height(200.dp)
                 .testTag("bundle_instructions"),
-            label = { Text("Shared instructions") },
+            label = { Text("Custom instructions") },
             shape = RoundedCornerShape(16.dp),
             colors = fieldColors,
         )
         Text(
-            text = "Files in this bundle are included in every chat here, and in any other chat that cross-references this bundle.",
+            text = "These instructions and files are shared with every chat in this bundle, and with any other chat that uses it.",
             style = MaterialTheme.typography.bodySmall,
             color = PunchMuted,
         )
-        bundle.files.forEach { file ->
-            Text(file.name, color = PunchIvory, style = MaterialTheme.typography.bodyMedium)
-        }
-        OutlinedButton(onClick = onAddFile, modifier = Modifier.testTag("bundle_add_file")) {
-            Text("Add file", color = PunchIvory)
-        }
-        Button(
-            onClick = onNewChat,
-            colors = ButtonDefaults.buttonColors(containerColor = PunchMint, contentColor = PunchInk),
-        ) {
-            Text("New chat in bundle")
-        }
-        if (chats.isNotEmpty()) {
-            Text("Chats", color = PunchMuted, style = MaterialTheme.typography.bodySmall)
-            chats.forEach { chat ->
-                TextButton(onClick = { onOpenChat(chat) }) {
-                    Text(chat.title, color = PunchIvory)
-                }
-            }
-        }
-        Spacer(Modifier.height(12.dp))
     }
 }

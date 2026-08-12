@@ -66,3 +66,40 @@ class PunchStoreCodecTest {
         assertEquals(1, restored.chatsInBundle("b1").size)
     }
 }
+
+class PunchStateDeleteTest {
+    private fun chat(id: String, bundleId: String? = null, refs: List<String> = emptyList(), updatedAt: Long = 1) =
+        ChatThread(
+            id = id,
+            title = id,
+            bundleId = bundleId,
+            crossRefBundleIds = refs,
+            createdAt = 1,
+            updatedAt = updatedAt,
+        )
+
+    @Test
+    fun deletingActiveChatSelectsNewestRemaining() {
+        val state = PunchState(
+            activeChatId = "a",
+            chats = listOf(chat("a", updatedAt = 1), chat("b", updatedAt = 3), chat("c", updatedAt = 2)),
+        ).withoutChat("a")
+        assertEquals("b", state.activeChatId)
+        assertEquals(listOf("b", "c"), state.chats.map { it.id })
+    }
+
+    @Test
+    fun deletingBundleUnlinksChatsAndCrossRefs() {
+        val state = PunchState(
+            activeChatId = "a",
+            chats = listOf(chat("a", bundleId = "b1", refs = listOf("b1", "b2"))),
+            bundles = listOf(
+                Bundle(id = "b1", name = "One", createdAt = 1),
+                Bundle(id = "b2", name = "Two", createdAt = 2),
+            ),
+        ).withoutBundle("b1")
+        assertTrue(state.bundles.none { it.id == "b1" })
+        assertEquals(null, state.chats.single().bundleId)
+        assertEquals(listOf("b2"), state.chats.single().crossRefBundleIds)
+    }
+}

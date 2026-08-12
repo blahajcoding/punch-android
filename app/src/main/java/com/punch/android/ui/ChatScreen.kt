@@ -101,6 +101,8 @@ fun ChatScreen(
     onNewBundle: () -> Unit,
     onOpenBundle: (Bundle) -> Unit,
     onOpenChat: (ChatThread) -> Unit,
+    onDeleteBundle: (Bundle) -> Unit,
+    onDeleteChat: (ChatThread) -> Unit,
     onOpenSettings: () -> Unit,
     onAttach: () -> Unit,
     onUseBundle: (Bundle) -> Unit,
@@ -145,6 +147,8 @@ fun ChatScreen(
                         scope.launch { drawerState.close() }
                         onOpenChat(it)
                     },
+                    onDeleteBundle = onDeleteBundle,
+                    onDeleteChat = onDeleteChat,
                     onOpenSettings = {
                         scope.launch { drawerState.close() }
                         onOpenSettings()
@@ -181,6 +185,10 @@ fun ChatScreen(
                     if (messages.isEmpty() && !busy) {
                         EmptyHero(
                             listening = pttState.listeningVisible,
+                            greeting = remember(chat?.id) {
+                                val seed = chat?.id.hashCode().toLong()
+                                emptyGreetings[kotlin.math.abs(seed % emptyGreetings.size).toInt()]
+                            },
                             modifier = Modifier.align(Alignment.Center),
                         )
                     } else {
@@ -292,30 +300,22 @@ private fun TopBar(
 @Composable
 private fun EmptyHero(
     listening: Boolean,
+    greeting: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Canvas(Modifier.size(36.dp)) {
-            val path = Path()
-            val cx = size.width / 2f
-            val cy = size.height / 2f
-            val outer = size.minDimension / 2f
-            val inner = outer * 0.32f
-            for (i in 0 until 8) {
-                val angle = Math.toRadians(-90.0 + i * 45.0)
-                val r = if (i % 2 == 0) outer else inner
-                val x = cx + (kotlin.math.cos(angle) * r).toFloat()
-                val y = cy + (kotlin.math.sin(angle) * r).toFloat()
-                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-            }
-            path.close()
-            drawPath(path, PunchMint)
-        }
+    Column(
+        modifier = modifier
+            .padding(24.dp)
+            .testTag("empty_hero"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        PunchMark()
         Spacer(Modifier.height(18.dp))
         Text(
-            text = if (listening) "Listening…" else "The mic is yours",
+            text = if (listening) "Listening…" else greeting,
             color = PunchIvory,
             style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
+            modifier = Modifier.testTag("empty_greeting"),
         )
     }
 }

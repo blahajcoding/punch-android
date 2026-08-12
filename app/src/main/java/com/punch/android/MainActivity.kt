@@ -190,6 +190,7 @@ class MainActivity : ComponentActivity() {
                         onQueryChange = { searchQuery.value = it },
                         chats = state.recents(),
                         onOpenChat = { openChat(it) },
+                        onDeleteChat = { deleteChat(it.id) },
                         onBack = { overlayState.value = Overlay.Chat },
                     )
 
@@ -209,6 +210,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onNewChat = { startChat(bundleId = bundle.id) },
                                 onOpenChat = { openChat(it) },
+                                onDeleteChat = { deleteChat(it.id) },
                                 onBack = { overlayState.value = Overlay.Chat },
                             )
                         }
@@ -240,6 +242,8 @@ class MainActivity : ComponentActivity() {
                             overlayState.value = Overlay.Bundle
                         },
                         onOpenChat = { openChat(it) },
+                        onDeleteBundle = { deleteBundle(it.id) },
+                        onDeleteChat = { deleteChat(it.id) },
                         onOpenSettings = { overlayState.value = Overlay.Settings },
                         onAttach = {
                             attachTarget.value = AttachTarget.Chat
@@ -320,6 +324,28 @@ class MainActivity : ComponentActivity() {
         gatewayClient.sessionId = chat.sessionId
         inputState.value = ""
         overlayState.value = Overlay.Chat
+    }
+
+    private fun deleteChat(id: String) {
+        mutate { state ->
+            val next = state.withoutChat(id)
+            if (next.activeChatId != null) {
+                next
+            } else {
+                val chat = newChat()
+                next.copy(chats = listOf(chat), activeChatId = chat.id)
+            }
+        }
+        gatewayClient.sessionId = punchState.value.activeChat()?.sessionId
+        inputState.value = ""
+    }
+
+    private fun deleteBundle(id: String) {
+        mutate { it.withoutBundle(id) }
+        if (editingBundleId.value == id) {
+            editingBundleId.value = null
+            overlayState.value = Overlay.Chat
+        }
     }
 
     private fun startBundle() {

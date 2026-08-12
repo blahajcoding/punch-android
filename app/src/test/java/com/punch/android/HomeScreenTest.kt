@@ -23,7 +23,8 @@ class HomeScreenTest {
     @Test
     fun homeScreenRenders() {
         composeRule.onNodeWithTag("agent_input").assertIsDisplayed()
-        composeRule.onNodeWithText("The mic is yours").assertIsDisplayed()
+        composeRule.onNodeWithTag("empty_hero").assertIsDisplayed()
+        composeRule.onNodeWithTag("punch_mark").assertIsDisplayed()
         composeRule.onNodeWithTag("app_title").assertIsDisplayed()
     }
 

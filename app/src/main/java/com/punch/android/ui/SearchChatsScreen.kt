@@ -1,6 +1,5 @@
 package com.punch.android.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +33,7 @@ fun SearchChatsScreen(
     onQueryChange: (String) -> Unit,
     chats: List<ChatThread>,
     onOpenChat: (ChatThread) -> Unit,
+    onDeleteChat: (ChatThread) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -78,14 +78,19 @@ fun SearchChatsScreen(
         )
         LazyColumn(Modifier.padding(top = 12.dp)) {
             items(matches, key = { it.id }) { chat ->
-                Text(
-                    text = chat.title,
-                    color = PunchIvory,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenChat(chat) }
-                        .padding(vertical = 14.dp),
-                )
+                DeleteMenuBox(
+                    onClick = { onOpenChat(chat) },
+                    onDelete = { onDeleteChat(chat) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = chat.title,
+                        color = PunchIvory,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                    )
+                }
             }
         }
     }

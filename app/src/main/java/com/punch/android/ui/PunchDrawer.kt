@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -59,6 +58,8 @@ fun PunchDrawer(
     onNewBundle: () -> Unit,
     onOpenBundle: (Bundle) -> Unit,
     onOpenChat: (ChatThread) -> Unit,
+    onDeleteBundle: (Bundle) -> Unit,
+    onDeleteChat: (ChatThread) -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -90,8 +91,17 @@ fun PunchDrawer(
             }
         }
         Spacer(Modifier.height(12.dp))
-        DrawerItem(icon = { Icon(Icons.Filled.Edit, contentDescription = null, tint = PunchIvory) }, label = "New chat", onClick = onNewChat, testTag = "drawer_new_chat")
-        DrawerItem(icon = { Icon(Icons.Filled.Search, contentDescription = null, tint = PunchIvory) }, label = "Search chats", onClick = onSearch)
+        DrawerItem(
+            icon = { Icon(Icons.Filled.Edit, contentDescription = null, tint = PunchIvory) },
+            label = "New chat",
+            onClick = onNewChat,
+            testTag = "drawer_new_chat",
+        )
+        DrawerItem(
+            icon = { Icon(Icons.Filled.Search, contentDescription = null, tint = PunchIvory) },
+            label = "Search chats",
+            onClick = onSearch,
+        )
         Spacer(Modifier.height(20.dp))
         Text("Bundles", style = MaterialTheme.typography.bodySmall, color = PunchMuted)
         Spacer(Modifier.height(8.dp))
@@ -110,6 +120,7 @@ fun PunchDrawer(
                     icon = { Icon(Icons.Filled.List, contentDescription = null, tint = PunchIvory) },
                     label = bundle.name,
                     onClick = { onOpenBundle(bundle) },
+                    onDelete = { onDeleteBundle(bundle) },
                 )
             }
             Spacer(Modifier.height(20.dp))
@@ -117,15 +128,14 @@ fun PunchDrawer(
             Spacer(Modifier.height(8.dp))
             recents.forEach { chat ->
                 val selected = chat.id == activeChatId
-                Row(
+                DeleteMenuBox(
+                    onClick = { onOpenChat(chat) },
+                    onDelete = { onDeleteChat(chat) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(50))
                         .background(if (selected) PunchCharcoal else Color.Transparent)
-                        .clickable { onOpenChat(chat) }
-                        .padding(horizontal = 14.dp, vertical = 12.dp)
                         .testTag("recent_${chat.id}"),
-                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = chat.title,
@@ -133,6 +143,7 @@ fun PunchDrawer(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                     )
                 }
             }
@@ -171,19 +182,34 @@ private fun DrawerItem(
     icon: @Composable () -> Unit,
     label: String,
     onClick: () -> Unit,
+    onDelete: (() -> Unit)? = null,
     testTag: String? = null,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(50))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 12.dp)
-            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) { icon() }
-        Spacer(Modifier.width(16.dp))
-        Text(label, color = PunchIvory, style = MaterialTheme.typography.bodyLarge)
+    val body: @Composable () -> Unit = {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) { icon() }
+            Spacer(Modifier.width(16.dp))
+            Text(
+                label,
+                color = PunchIvory,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+    val shape = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(50))
+        .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
+    if (onDelete == null) {
+        Box(shape.clickable(onClick = onClick)) { body() }
+    } else {
+        DeleteMenuBox(onClick = onClick, onDelete = onDelete, modifier = shape) { body() }
     }
 }
