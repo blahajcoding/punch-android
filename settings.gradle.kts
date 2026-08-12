@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "pincher"
+rootProject.name = "punch-android"
 include(":app")

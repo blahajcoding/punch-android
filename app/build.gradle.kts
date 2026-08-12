@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.hermes.launcher"
+    namespace = "com.punch.android"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.pincher.launcher"
+        applicationId = "com.punch.android"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

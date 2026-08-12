@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">pincher</string>
-    <string name="accessibility_service_label">pincher PTT</string>
-    <string name="accessibility_service_description">Allows pincher to use Volume Down as push-to-talk when enabled. Global key filtering is not guaranteed on all devices or Nothing OS builds. Use the on-screen PTT button if Volume Down does not reach pincher.</string>
+    <string name="app_name">Punch</string>
 </resources>
