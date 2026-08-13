@@ -66,6 +66,13 @@ class MarkdownTextTest {
     }
 
     @Test
+    fun unsupportedUrlRenderedAsPlainTextWithoutAnnotation() {
+        val annotated = inlineMarkdown("call [us](tel:+123456789) now") {}
+        assertEquals("call us now", annotated.text)
+        assertTrue(annotated.getLinkAnnotations(0, annotated.length).isEmpty())
+    }
+
+    @Test
     fun supportedUrlValidationAcceptsHttp() {
         assertTrue(isSupportedUrl("https://example.com"))
         assertTrue(isSupportedUrl("http://example.com/a?b=1"))

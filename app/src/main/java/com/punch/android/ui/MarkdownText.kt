@@ -170,19 +170,23 @@ private fun appendInline(builder: AnnotatedString.Builder, text: String, linkLis
                 val close = raw.indexOf("](")
                 val label = raw.substring(1, close)
                 val url = raw.substring(close + 2, raw.length - 1)
-                val link = LinkAnnotation.Clickable(
-                    tag = url,
-                    styles = TextLinkStyles(
-                        style = SpanStyle(
-                            color = PunchMint,
-                            textDecoration = TextDecoration.Underline,
+                if (isSupportedUrl(url)) {
+                    val link = LinkAnnotation.Clickable(
+                        tag = url,
+                        styles = TextLinkStyles(
+                            style = SpanStyle(
+                                color = PunchMint,
+                                textDecoration = TextDecoration.Underline,
+                            ),
                         ),
-                    ),
-                    linkInteractionListener = linkListener,
-                )
-                val start = builder.length
-                builder.append(label)
-                builder.addLink(link, start, builder.length)
+                        linkInteractionListener = linkListener,
+                    )
+                    val start = builder.length
+                    builder.append(label)
+                    builder.addLink(link, start, builder.length)
+                } else {
+                    builder.append(label)
+                }
             }
             else -> builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                 builder.append(raw.substring(1, raw.length - 1))
