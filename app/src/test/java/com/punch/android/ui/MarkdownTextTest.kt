@@ -41,4 +41,20 @@ class MarkdownTextTest {
         composeRule.onNodeWithText("•  two").assertExists()
         composeRule.onNodeWithText("val x = 1").assertExists()
     }
+
+    @Test
+    fun boldWithInnerAsteriskKeepsText() {
+        composeRule.setContent {
+            MarkdownText("**a * b**")
+        }
+        composeRule.onNodeWithText("a * b").assertExists()
+    }
+
+    @Test
+    fun rendersLinkLabel() {
+        composeRule.setContent {
+            MarkdownText("see [docs](https://example.com) here")
+        }
+        composeRule.onNodeWithText("see docs here").assertExists()
+    }
 }

@@ -20,8 +20,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -45,6 +48,10 @@ fun MarkdownText(
     textColor: Color = PunchIvory,
 ) {
     val blocks = remember(text) { parseMarkdown(text) }
+    val uriHandler = LocalUriHandler.current
+    val linkListener: (LinkAnnotation) -> Unit = { link ->
+        if (link is LinkAnnotation.Clickable) uriHandler.openUri(link.tag)
+    }
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -52,7 +59,7 @@ fun MarkdownText(
         blocks.forEach { block ->
             when (block) {
                 is Block.Heading -> Text(
-                    text = inlineMarkdown(block.text),
+                    text = inlineMarkdown(block.text, linkListener),
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontSize = headingSize(block.level),
                         fontWeight = FontWeight.Bold,
@@ -60,15 +67,15 @@ fun MarkdownText(
                     ),
                 )
                 is Block.Paragraph -> Text(
-                    text = inlineMarkdown(block.text),
+                    text = inlineMarkdown(block.text, linkListener),
                     style = MaterialTheme.typography.bodyLarge.copy(color = textColor),
                 )
                 is Block.Bullet -> Text(
-                    text = prefixedMarkdown("•  ", block.text),
+                    text = prefixedMarkdown("•  ", block.text, linkListener),
                     style = MaterialTheme.typography.bodyLarge.copy(color = textColor),
                 )
                 is Block.Numbered -> Text(
-                    text = prefixedMarkdown("${block.number}.  ", block.text),
+                    text = prefixedMarkdown("${block.number}.  ", block.text, linkListener),
                     style = MaterialTheme.typography.bodyLarge.copy(color = textColor),
                 )
                 is Block.Quote -> Row(Modifier.height(IntrinsicSize.Min)) {
@@ -80,7 +87,7 @@ fun MarkdownText(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = inlineMarkdown(block.text),
+                        text = inlineMarkdown(block.text, linkListener),
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontStyle = FontStyle.Italic,
                             color = PunchMuted,
@@ -120,16 +127,16 @@ private fun headingSize(level: Int): TextUnit = when (level) {
     else -> 17.sp
 }
 
-private fun prefixedMarkdown(prefix: String, text: String): AnnotatedString =
+private fun prefixedMarkdown(prefix: String, text: String, linkListener: (LinkAnnotation) -> Unit): AnnotatedString =
     buildAnnotatedString {
         append(prefix)
-        appendInline(this, text)
+        appendInline(this, text, linkListener)
     }
 
-private fun inlineMarkdown(text: String): AnnotatedString =
-    buildAnnotatedString { appendInline(this, text) }
+private fun inlineMarkdown(text: String, linkListener: (LinkAnnotation) -> Unit): AnnotatedString =
+    buildAnnotatedString { appendInline(this, text, linkListener) }
 
-private fun appendInline(builder: AnnotatedString.Builder, text: String) {
+private fun appendInline(builder: AnnotatedString.Builder, text: String, linkListener: (LinkAnnotation) -> Unit) {
     var start = 0
     for (match in INLINE_TOKEN.findAll(text)) {
         if (match.range.first > start) {
@@ -154,14 +161,20 @@ private fun appendInline(builder: AnnotatedString.Builder, text: String) {
             raw.startsWith("[") -> {
                 val close = raw.indexOf("](")
                 val label = raw.substring(1, close)
-                builder.withStyle(
-                    SpanStyle(
-                        color = PunchMint,
-                        textDecoration = TextDecoration.Underline,
+                val url = raw.substring(close + 2, raw.length - 1)
+                val link = LinkAnnotation.Clickable(
+                    tag = url,
+                    styles = TextLinkStyles(
+                        style = SpanStyle(
+                            color = PunchMint,
+                            textDecoration = TextDecoration.Underline,
+                        ),
                     ),
-                ) {
-                    builder.append(label)
-                }
+                    linkInteractionListener = linkListener,
+                )
+                val start = builder.length
+                builder.append(label)
+                builder.addLink(link, start, builder.length)
             }
             else -> builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                 builder.append(raw.substring(1, raw.length - 1))
@@ -189,7 +202,7 @@ private val BULLET = Regex("\\s*[-*+]\\s+(.*)")
 private val NUMBERED = Regex("\\s*(\\d+)\\.\\s+(.*)")
 private val QUOTE = Regex("\\s*>\\s?(.*)")
 private val HORIZONTAL = Regex("\\s*([-*_])\\s*(\\1\\s*){2,}")
-private val INLINE_TOKEN = Regex("""(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|~~[^~]+~~|\[[^\]\n]+]\([^)\n]+\))""")
+private val INLINE_TOKEN = Regex("""(\*\*(.+?)\*\*|\*[^*]+\*|`[^`]+`|~~[^~]+~~|\[[^\]\n]+]\([^)\n]+\))""")
 
 private fun parseMarkdown(text: String): List<Block> {
     val blocks = mutableListOf<Block>()
