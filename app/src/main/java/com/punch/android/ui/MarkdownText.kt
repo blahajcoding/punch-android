@@ -242,7 +242,7 @@ private fun parseMarkdown(text: String): List<Block> {
                     i++
                     continue
                 }
-                val bullet = BULLET.matchEntire(line)
+                val bullet = if (HORIZONTAL.matches(line)) null else BULLET.matchEntire(line)
                 if (bullet != null) {
                     blocks += Block.Bullet(bullet.groupValues[1].trim())
                     i++
