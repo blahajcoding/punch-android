@@ -2,6 +2,10 @@ package com.punch.android.ui
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.text.LinkAnnotation
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,10 +55,30 @@ class MarkdownTextTest {
     }
 
     @Test
-    fun rendersLinkLabel() {
-        composeRule.setContent {
-            MarkdownText("see [docs](https://example.com) here")
+    fun rendersLinkWithClickableAnnotation() {
+        val annotated = inlineMarkdown("see [docs](https://example.com/path?q=1) here") {}
+        assertEquals("see docs here", annotated.text)
+        val links = annotated.getLinkAnnotations(0, annotated.length)
+        assertEquals(1, links.size)
+        val link = links[0].item
+        assertTrue(link is LinkAnnotation.Clickable)
+        assertEquals("https://example.com/path?q=1", (link as LinkAnnotation.Clickable).tag)
+    }
+
+    @Test
+    fun supportedUrlValidationAcceptsHttp() {
+        assertTrue(isSupportedUrl("https://example.com"))
+        assertTrue(isSupportedUrl("http://example.com/a?b=1"))
+    }
+
+    @Test
+    fun supportedUrlValidationRejectsUnsafeOrInvalid() {
+        val cases = listOf(
+            "", "javascript:alert(1)", "tel:+123456789", "file:///etc/passwd",
+            "ftp://example.com", "https://", "//example.com", "not a url",
+        )
+        for (url in cases) {
+            assertFalse("expected rejected: <$url>", isSupportedUrl(url))
         }
-        composeRule.onNodeWithText("see docs here").assertExists()
     }
 }

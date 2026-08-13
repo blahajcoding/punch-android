@@ -1,5 +1,6 @@
 package com.punch.android.ui
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,7 +51,9 @@ fun MarkdownText(
     val blocks = remember(text) { parseMarkdown(text) }
     val uriHandler = LocalUriHandler.current
     val linkListener: (LinkAnnotation) -> Unit = { link ->
-        if (link is LinkAnnotation.Clickable) uriHandler.openUri(link.tag)
+        if (link is LinkAnnotation.Clickable && isSupportedUrl(link.tag)) {
+            uriHandler.openUri(link.tag)
+        }
     }
     Column(
         modifier = modifier,
@@ -127,13 +130,18 @@ private fun headingSize(level: Int): TextUnit = when (level) {
     else -> 17.sp
 }
 
+internal fun isSupportedUrl(url: String): Boolean {
+    val uri = Uri.parse(url)
+    return (uri.scheme == "http" || uri.scheme == "https") && !uri.host.isNullOrEmpty()
+}
+
 private fun prefixedMarkdown(prefix: String, text: String, linkListener: (LinkAnnotation) -> Unit): AnnotatedString =
     buildAnnotatedString {
         append(prefix)
         appendInline(this, text, linkListener)
     }
 
-private fun inlineMarkdown(text: String, linkListener: (LinkAnnotation) -> Unit): AnnotatedString =
+internal fun inlineMarkdown(text: String, linkListener: (LinkAnnotation) -> Unit): AnnotatedString =
     buildAnnotatedString { appendInline(this, text, linkListener) }
 
 private fun appendInline(builder: AnnotatedString.Builder, text: String, linkListener: (LinkAnnotation) -> Unit) {
