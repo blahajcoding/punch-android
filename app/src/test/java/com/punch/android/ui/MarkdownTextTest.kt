@@ -76,6 +76,8 @@ class MarkdownTextTest {
     fun supportedUrlValidationAcceptsHttp() {
         assertTrue(isSupportedUrl("https://example.com"))
         assertTrue(isSupportedUrl("http://example.com/a?b=1"))
+        assertTrue(isSupportedUrl("HTTPS://example.com"))
+        assertTrue(isSupportedUrl("hTtP://example.com"))
     }
 
     @Test

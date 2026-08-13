@@ -132,7 +132,8 @@ private fun headingSize(level: Int): TextUnit = when (level) {
 
 internal fun isSupportedUrl(url: String): Boolean {
     val uri = Uri.parse(url)
-    return (uri.scheme == "http" || uri.scheme == "https") && !uri.host.isNullOrEmpty()
+    val scheme = uri.scheme?.lowercase()
+    return (scheme == "http" || scheme == "https") && !uri.host.isNullOrEmpty()
 }
 
 private fun prefixedMarkdown(prefix: String, text: String, linkListener: (LinkAnnotation) -> Unit): AnnotatedString =
